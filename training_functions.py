@@ -7,6 +7,8 @@ import json
 from os import listdir
 from os.path import isfile, join
 
+def pdf(data):
+    return pd.DataFrame(data)
 
 def read_csv_power_file(file_path, filename):
     csv_path = os.path.join(file_path, filename)
@@ -75,6 +77,7 @@ def do_aggregations(d, filename, FTP):
     KPH = d.get('KPH', np.full([len(d)], np.nan))
     WATTS = d.get('WATTS', np.full([len(d)], np.nan))
     CAD = d.get('CAD', np.full([len(d)], np.nan))
+    TEMP = d.get('TEMP', np.full([len(d)], np.nan))
 
     alt = calculate_height_gain(d.get('ALT', np.full([len(d)], np.nan)))
     int_fac = normalized_power(WATTS) / FTP
@@ -98,7 +101,7 @@ def do_aggregations(d, filename, FTP):
     df.loc[0] = [filename, epoch_day, minutes, CAD.mean(), HR.mean(), HR.min(),
                  HR.max(), hr_drift(HR, WATTS), KM.max(), KPH.mean(), kilojoules(WATTS),
                  WATTS.mean(), WATTS.max(), WATTS.std(), w_25, w_50, w_75, normalized_power(WATTS),
-                 alt, d.TEMP.mean(), v_index, tss, int_fac]
+                 alt, TEMP.mean(), v_index, tss, int_fac]
 
     df.filename.apply(str)
 
@@ -167,7 +170,10 @@ def tag_classifier_by_power(interval, FTP):
         return 'NA'
 
 
-def get_intervals_from_json_map(j, filename, FTP):
+def get_intervals_from_json_map(j, filename, FTP, debug=False):
+    if debug:
+        print(filename)
+
     ride = j.get('RIDE')
     intervals = ride.get('INTERVALS')
     samples = ride.get('SAMPLES')
@@ -195,8 +201,8 @@ def files_in_folder(mypath):
     return [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
 
-def read_intervals(path, FTP):
-    dfs = [get_intervals_from_json_map(read_json_file(path, filename), filename, FTP)
+def read_intervals(path, FTP, debug=False):
+    dfs = [get_intervals_from_json_map(read_json_file(path, filename), filename, FTP, True  )
            for filename in files_in_folder(path)
            if filename.split('.')[1] == 'utf8']
 
